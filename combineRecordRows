@@ -1,0 +1,187 @@
+public class combineRecordRows {
+    
+    public static list <sObject> mergeUnits (list <sObject> allrecs) {
+        
+        //	MERGE OPERATION CANNOT BE CONDUCTED UISNG THE 
+        //	STANDARD PS RECORD AS A BASE BECAUSE THE TARGET FIELD UNITS IS NOT WRITEABLE
+        //	THEREFORE, IT CANNOT BE ALTERED IN A TYPED RECORD
+
+        string pdate = '';
+        string pacct = '';
+        string ploc = '';
+        
+        string datatag = '{"Data":';
+
+        list <string> matchlist = new list <string>();
+        string somematches = '';
+        integer marker = 0;
+        
+        //	COMPARISON ENGINE.... this iteration analyzes for matches on a pre-sorted list
+
+        for (sObject a : allrecs) {
+
+            //	condition of a match
+            
+            if (string.valueof(a.get('Start_Date__c')) == pdate && 
+                string.valueof(a.get('accountno__c')) == pacct && 
+                string.valueof(a.get('MilLocIDX__c')) == ploc) {
+
+                    if (string.isblank(somematches)) {
+                        somematches += string.valueof(marker-1) + ',' + string.valueof(marker);
+                    }
+                    
+                    else {
+                        somematches += string.valueof(marker);
+                    }
+                    
+                    system.debug(marker + ' : ' + somematches);
+                }
+
+            //	condition of a non-match; add gathering string to list; null out gathering
+            //	tho it seems highly unlikely that we will ever encounter more than 2 same-day records
+            //	this method will click for any number of matching records...
+            
+            else {
+                
+                system.debug('no match @ ' + marker);
+                
+                if(!string.isblank(somematches)) {
+
+                    string aclone = somematches;
+                    matchlist.add(aclone);
+                    somematches = '';
+                }
+            }
+            
+            //	set next interation prior vals upon completion of this iteration
+            
+            pdate =  string.valueof(a.get('Start_Date__c'));
+            pacct = string.valueof(a.get('accountno__c'));
+            ploc = string.valueof(a.get('MilLocIDX__c'));
+            
+            system.debug('marker = ' + marker + ' & pdate = ' + pdate);
+            system.debug('marker = ' + marker + ' & pacct = ' + pacct);
+            system.debug('marker = ' + marker + ' & ploc = ' + ploc);
+             
+            marker++;
+            
+        }
+
+        //	MERGE ENGINE
+
+        integer mergecount = matchlist.size()-1;
+        
+        system.debug(mergecount);
+        
+        
+        while (mergecount>-1) {
+            
+            sObject putback;
+            
+            list <string> mergerecs = matchlist.get(mergecount).split(',');
+
+            integer squish = mergerecs.size()-1;
+            integer hold = mergerecs.size()-1;
+            
+            system.debug(mergecount + ' : ' + squish + ' : ' + hold);
+            
+            decimal over = 0;
+            string comm = '';
+            
+            while (squish>-1) {
+
+                if (squish == hold) {
+                    
+                    putback = allrecs.remove(integer.valueof(mergerecs.get(squish)));
+                    string getover = string.valueof(putback.get('Units__c'));
+                    over = decimal.valueof(getover);
+                    comm += string.valueof(putback.get('Id')) + ',';
+                    
+                }
+                
+                else {
+                    
+                    sObject thisrec = allrecs.remove(integer.valueof(mergerecs.get(squish)));
+                    string getover2 = string.valueof(thisrec.get('Units__c'));
+                    over += decimal.valueof(getover2);
+                    comm += string.valueof(thisrec.get('Id')) + ',';
+                }
+                
+                if (squish == 0) {
+                    
+                    comm = comm.removeEnd(',');
+                    
+                    string jsonrecord = json.serialize(putback);
+                    system.debug(jsonrecord);
+                    
+                    string backhalf = jsonrecord.substringafter('"Units__c":').substringAfter(','); // address the problem if fld is last...
+                    
+                    system.debug(backhalf);
+                    
+                    string reformedrecord;
+                    
+                    if (string.isblank(backhalf)) {
+                        reformedrecord = datatag + jsonrecord.substringBefore('"Units__c":') + '"Units__c":' +
+                            string.valueof(over) + '}}'; 
+                    }
+                    
+                    else {
+                        reformedrecord = datatag + jsonrecord.substringBefore('"Units__c":') + '"Units__c":' +
+                            string.valueof(over) + ',' + backhalf + '}';                        
+                        
+                    }
+                    
+                    string backhalf2 = jsonrecord.substringafter('"Id":').substringAfter(','); 
+                    
+                    string reformedagain;
+                    
+                    if (string.isblank(backhalf2)) {
+                        reformedagain = reformedrecord.substringbefore('"Id":') + '"Id":"' +
+                            comm + '"}}';                        
+                    }
+                    
+                    else {
+                        reformedagain = reformedrecord.substringbefore('"Id":') + '"Id":"' +
+                            comm + '",' + backhalf2 + '}';                           
+                    }
+                    
+                   
+                    system.debug(reformedagain);
+
+                    sObject addback = buildARec(reformedagain);
+                    
+                    system.debug(addback);
+                    
+                    allrecs.add(integer.valueof(mergerecs.get(0)), addback);
+                    
+                }
+                
+                squish--;
+            }
+            
+            mergecount--;
+        }
+        
+        return allrecs;
+    }
+    
+    private static sObject buildARec (string s) {
+
+        sobject arec;
+        
+        map <String, Object> sObjMap = (map<String, Object>) json.deserializeUntyped(s);
+        
+        String sObjJson = json.serialize(sObjMap.get('Data'));
+        
+        Map<String, Object> sObjMap2 = (Map<String, Object>) json.deserializeUntyped(sObjJson);
+        
+        system.debug(sObjMap2);
+        
+        String sObjJson2 = json.serialize(sObjMap2);
+        
+        arec = (sObject)json.deserialize(sObjJson2, sObject.class);        
+
+        return arec;
+    }
+ 
+}
