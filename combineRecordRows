@@ -2,7 +2,7 @@ public class combineRecordRows {
     
     public static list <sObject> mergeUnits (list <sObject> allrecs) {
         
-        //	MERGE OPERATION CANNOT BE CONDUCTED UISNG THE 
+        //	MERGE OPERATION CANNOT BE CONDUCTED USING THE 
         //	STANDARD PS RECORD AS A BASE BECAUSE THE TARGET FIELD UNITS IS NOT WRITEABLE
         //	THEREFORE, IT CANNOT BE ALTERED IN A TYPED RECORD
 
