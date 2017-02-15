@@ -1,0 +1,99 @@
+@istest
+private class testCombineRecordRows {
+
+    static testMethod void mergeRows () {
+        
+        //	build test unit records
+        //	
+        //	handle these records as untyped sObject records
+        //	
+        //	the test data consists of 7 unit records, of which two pair are dupes and 3 are singletons
+        //	
+        //	combineRecordRows should merge the two pairs and pass the 3 singletons as-is
+    
+        string dup1 ='{"Data":{"attributes":{"type":"Program_Service__c","url":"/services/data/v39.0/sobjects/'+
+            'Program_Service__c/a6dA00000003GWwIAM"},"accountno__c":"2271","consumerLast__c":"Gunn","consumerFirst__c":'+
+            '"Brendan","consumerDOB__c":"1989-12-12","gend__c":"Male","payer_to_bill__c":"Medicaid",'+
+            '"medicaidId__c":"UG34893U","Locator__c":"008","dx_code__c":"F84.0","Units__c":10,"Start_Date__c":'+
+            '"2017-01-11","MilLocIDX__c":"CommHabQns","Id":"a6dA00000003GWwIAM"}}';
+        
+        string dup2 = '{"Data":{"attributes":{"type":"Program_Service__c","url":"/services/data/v39.0/sobjects/'+
+            'Program_Service__c/a6dA00000003GWuIAM"},"accountno__c":"2271","consumerLast__c":"Gunn","consumerFirst__c":'+
+            '"Brendan","consumerDOB__c":"1989-12-12","gend__c":"Male","payer_to_bill__c":"Medicaid",'+
+            '"medicaidId__c":"UG34893U","Locator__c":"008","dx_code__c":"F84.0","Units__c":10,"Start_Date__c":'+
+            '"2017-01-11","MilLocIDX__c":"CommHabQns","Id":"a6dA00000003GWuIAM"}}';
+        
+        string dup3 = '{"Data":{"attributes":{"type":"Program_Service__c","url":"/services/data/v39.0/sobjects/'+
+            'Program_Service__c/a6dA00000003GWyIAM"},"accountno__c":"2518","consumerLast__c":"Gill","consumerFirst__c":'+
+            '"Pardeep","consumerDOB__c":"1999-09-07","gend__c":"Male","payer_to_bill__c":"Medicaid",'+
+            '"medicaidId__c":"TV32471F","Locator__c":"008","dx_code__c":"F84.0","Units__c":12,"Start_Date__c":'+
+            '"2017-01-09","MilLocIDX__c":"CommHabQns","Id":"a6dA00000003GWyIAM"}}';
+        
+        string dup4 = '{"Data":{"attributes":{"type":"Program_Service__c","url":"/services/data/v39.0/sobjects/'+
+            'Program_Service__c/a6dA00000003GWxIAM"},"accountno__c":"2518","consumerLast__c":"Gill","consumerFirst__c":'+
+            '"Pardeep","consumerDOB__c":"1999-09-07","gend__c":"Male","payer_to_bill__c":"Medicaid",'+
+            '"medicaidId__c":"TV32471F","Locator__c":"008","dx_code__c":"F84.0","Units__c":4,"Start_Date__c":'+
+            '"2017-01-09","MilLocIDX__c":"CommHabQns","Id":"a6dA00000003GWxIAM"}}';
+        
+        string rec1 = '{"Data":{"attributes":{"type":"Program_Service__c","url":"/services/data/v39.0/sobjects/'+
+            'Program_Service__c/a6dA00000003GWvIAM"},"accountno__c":"1478","consumerLast__c":"Hakim",'+
+            '"consumerFirst__c":"Caleb","consumerDOB__c":"1999-02-03","gend__c":"Male","payer_to_bill__c":'+
+            '"Medicaid","medicaidId__c":"TH01730M","dx_code__c":"F84.0","Units__c":16,"Start_Date__c":'+
+            '"2016-12-11","MilLocIDX__c":"RespiteQnsINHMFSS","Id":"a6dA00000003GWvIAM"}}';
+        
+        string rec2 = '{"Data":{"attributes":{"type":"Program_Service__c","url":"/services/data/v39.0/sobjects/'+
+            'Program_Service__c/a6dA00000003GWzIAM"},"accountno__c":"1478","consumerLast__c":"Hakim",'+
+            '"consumerFirst__c":"Caleb","consumerDOB__c":"1999-02-03","gend__c":"Male","payer_to_bill__c":"Medicaid",'+
+            '"medicaidId__c":"TH01730M","dx_code__c":"F84.0","Units__c":16,"Start_Date__c":'+
+            '"2016-12-17","MilLocIDX__c":"RespiteQnsINHMFSS","Id":"a6dA00000003GWzIAM"}}';
+        
+        string rec3 = '{"Data":{"attributes":{"type":"Program_Service__c","url":"/services/data/v39.0/sobjects/'+
+            'Program_Service__c/a6dA00000003GWtIAM"},"accountno__c":"2252","consumerLast__c":"Abdelnabi",'+
+            '"consumerFirst__c":"Mohmad","consumerDOB__c":"1992-11-17","gend__c":"Male","payer_to_bill__c":'+
+            '"Medicaid","medicaidId__c":"VW48547K","Locator__c":"072","dx_code__c":"F72",'+
+            '"Units__c":12,"Start_Date__c":"2017-01-04","MilLocIDX__c":"RespiteQnsINHMFSS",'+
+            '"Id":"a6dA00000003GWtIAM"}}';
+        
+        list <sobject> psrecs = new list <sobject>();
+        
+        
+        list <string> records = new list <string>{dup1,dup2,dup3,dup4,rec1,rec2,rec3};
+            
+            for (string s : records) {
+                
+                map <String, Object> sObjMap = (map<String, Object>) json.deserializeUntyped(s);
+                
+                String sObjJson = json.serialize(sObjMap.get('Data'));
+                
+                Map<String, Object> sObjMap2 = (Map<String, Object>) json.deserializeUntyped(sObjJson);
+
+                system.debug(sObjMap2);
+                
+                String sObjJson2 = json.serialize(sObjMap2);
+                
+                sObject customObject = (sObject)json.deserialize(sObjJson2, sObject.class);
+                
+                psrecs.add(customObject);
+                
+            }
+        
+        system.assertequals(7, psrecs.size());
+        
+        list <sObject> processed = combineRecordRows.mergeUnits(psrecs);
+
+        test.startTest();
+         
+        system.assertequals(5, processed.size());
+        
+        // TEST THAT MERGED RECORDS CONTAIN MERGED VALUES AND THAT UNMERGED RECORDS PASSED THROUGH UNHARMED.
+        
+        system.assertEquals(20, integer.valueof(processed[0].get('Units__c')));
+        system.assertEquals(16, integer.valueof(processed[1].get('Units__c')));
+        system.assertEquals(16, integer.valueof(processed[2].get('Units__c')));
+        system.assertEquals(16, integer.valueof(processed[3].get('Units__c')));
+        system.assertEquals(12, integer.valueof(processed[4].get('Units__c')));
+
+        test.stopTest();
+    }
+    
+}
