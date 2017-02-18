@@ -114,7 +114,14 @@ public class combineRecordRows {
                     string jsonrecord = json.serialize(putback);
                     system.debug(jsonrecord);
                     
-                    string backhalf = jsonrecord.substringafter('"Units__c":').substringAfter(','); // address the problem if fld is last...
+                    string backhalf = jsonrecord.substringafter('"Units__c":').substringAfter(','); 
+                    
+                    //  address the problem if fld is last...
+                    //  but more... what if your target field value is a string with an embedded comma?
+                    //  this works beautifully in the isolated event of the field being a "number"
+                    //  or a non-breaking string where sytax operators are not permitted chars....
+                    //  but if you are going to generalize this to a class... you need to know the 
+                    //  value typing, and you need a different method to handle unrestricted strings
                     
                     system.debug(backhalf);
                     
