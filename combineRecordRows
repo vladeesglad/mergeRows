@@ -104,12 +104,12 @@ public class combineRecordRows {
                     sObject thisrec = allrecs.remove(integer.valueof(mergerecs.get(squish)));
                     string getover2 = string.valueof(thisrec.get('Units__c'));
                     over += decimal.valueof(getover2);
-                    comm += string.valueof(thisrec.get('Id')) + ',';
+                    comm += string.valueof(thisrec.get('Id')) + '/';
                 }
                 
                 if (squish == 0) {
                     
-                    comm = comm.removeEnd(',');
+                    comm = comm.removeEnd('/');
                     
                     string jsonrecord = json.serialize(putback);
                     system.debug(jsonrecord);
