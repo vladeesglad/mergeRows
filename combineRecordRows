@@ -95,7 +95,7 @@ public class combineRecordRows {
                     putback = allrecs.remove(integer.valueof(mergerecs.get(squish)));
                     string getover = string.valueof(putback.get('Units__c'));
                     over = decimal.valueof(getover);
-                    comm += string.valueof(putback.get('Id')) + ',';
+                    comm += string.valueof(putback.get('Id')) + '/';
                     
                 }
                 
